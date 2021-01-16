@@ -1,0 +1,488 @@
+---
+title: "Datos interesantes sobre la historia del futbol español"
+subtitle: "Ignacio Montava (monpeig@alumni.uv.es)" #- pongo tú nombre ahí para q aparezca más grande q el de la UV
+author: "Universitat de València"
+date: "Diciembre de 2020 (actualizado el `r format(Sys.time(), '%d-%m-%Y')`)"
+output:
+  html_document:
+    #css: "./assets/my_css_file.css"
+    theme: paper
+    highlight: textmate 
+    toc: true
+    toc_depth: 3 
+    toc_float: 
+      collapsed: true
+      smooth_scroll: true
+    self_contained: true
+    number_sections: false
+    df_print: kable
+    code_download: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r packages-setup, include = FALSE}
+library(tidyverse)
+library(klippy)  #- remotes::install_github("rlesur/klippy")
+library(knitr)
+```
+
+```{r chunk-setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE, 
+                      #results = "hold",
+                      cache = FALSE, cache.path = "/caches/", comment = "#>",
+                      #fig.width = 7, #fig.height= 7,   
+                      #out.width = 7, out.height = 7,
+                      collapse = TRUE,  fig.show = "hold",
+                      fig.asp = 7/9, out.width = "60%", fig.align = "center")
+knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo-png"))
+```
+
+```{r options-setup, include = FALSE}
+options(scipen = 999) #- para quitar la notación científica
+options("yaml.eval.expr" = TRUE) 
+```
+
+
+```{r klippy, echo = FALSE}
+klippy::klippy(position = c("top", "right")) #- remotes::install_github("rlesur/klippy")
+```
+
+<hr class="linea-black">
+
+Trabajo elaborado para la asignatura "Programación y manejo de datos en la era del Big Data" de la Universitat de València durante el curso 2020-2021. El repo del trabajo está [aquí](https://github.com/imontava10/trabajo_BigData){target="_blank"}. La página web de la asignatura y los trabajos de mis compañeros pueden verse [aquí](https://perezp44.github.io/intro-ds-20-21-web/07-trabajos.html){target="_blank"}.
+
+<!-- El párrafo de arriba has de dejarlo casi igual, 
+        solo HAS de SUSTITUIR las 2 veces que aparece "perezp44" por tu usuario de Github-->
+
+<hr class="linea-red">
+
+# 1. Introducción
+
+Este tabajo me ha ayudado ha conocer algunos datos curiosos osbre mi hobby favorito como es el futbol. Hacer el trabajo sobre este deporte ma ha ayduado a que me interese más la realización del trabajo.<br>
+
+Por una parte, voy a hablar de algunos datos de Laliga centrandome principalmente en los máximos goleadores históricos. Más tarde también me centraré en datos sobre los campeones de liga. Por último, pasaré a datos sobre los goleadores 4 grandes ligas (Laliga, Bundesliga, Premier League y la Serie A).<br>
+
+![Copa](./imagenes/copa.jpg)
+
+# 2. Datos
+
+Los datos son procedentes de varios repositorios de Github, donde he tenido varios problemas a la hora de seleccionar y trasformar, ya que muchos nombres de los jugadores y equipos no son aceptados correctamente debido a los acentos, diéresis... <br>
+Los datos están en formato Excel y he conseguido extraer varios data frames. A parte de estps, había encontrado otros por internet, pero estaban muy mal estructurados y a la hora de manejarlos se me hacía imposible.
+
+```{r, eval = TRUE}
+goleadores_laliga <- rio::import(here::here("./datos/goles_total_laliga.csv"))
+goleadores_ligas_top<- rio::import(here::here("./datos/goles_ligas_top.csv"))
+estadisticas_jugadores<- rio::import(here::here("./datos/estadisticas_jugadores.csv"))
+clasificacion<- rio::import(here::here("./datos/clasificacion_total.csv"))
+campeones<- rio::import(here::here("./datos/La_Liga_Winners.csv"))
+
+#Tabla campeones
+campeones <- campeones %>% mutate(Winner = case_when(
+Winner==  "AtlÃ©tico Madrid" ~ "Átletico de Madird",
+Winner == "AtlÃ©tico AviaciÃ³n[a]" ~ "Átletico de Madrid",
+Winner == "Deportivo La CoruÃ±a" ~ "Deportivo de La Coruña",
+TRUE ~ Winner))
+#Tabla goleadores
+goleadores_laliga$Total = rowSums (goleadores_laliga[ , 4:32])
+
+
+```
+
+
+
+# 3. Goleadores
+En esta parte del tabajo voy a tratar de mostrar una serie de datos curiosos de los máximos goleadores de la liga desde el 1990 hasta día de hoy; también dedicaré un tramo para mostrar datos de los máximos goleadores de las grandes ligas europeas.
+
+
+```{r}
+goleadores_laliga <- rio::import(here::here("./datos/goles_total_laliga.csv"))
+goleadores_laliga$Total = rowSums (goleadores_laliga[ , 4:32])
+
+```
+
+
+En primer lugar vamos a observar quien es el jugador con más goles en la historia de Laliga:
+
+```{r, eval = TRUE}
+goleadores_laliga <- rio::import(here::here("./datos/goles_total_laliga.csv"))
+
+library (tidyverse)
+library(gganimate)
+
+
+
+goleadores_laliga$Total = rowSums (goleadores_laliga[ , 4:32])
+
+goleadores_laliga <- goleadores_laliga %>% mutate(Player = case_when(
+  Player==  "RaÃºl" ~ " Raúl ",
+  TRUE ~ Player))
+
+Imagen<-"https://upload.wikimedia.org/wikipedia/commons/b/b8/Messi_vs_Nigeria_2018.jpg"
+
+
+
+Messi <- goleadores_laliga  %>% slice_max(Total, n = 1) %>% select(Player|Total)
+
+Messi <- Messi %>% add_column(Imagen)
+
+library(gt)
+Messi <- Messi %>% gt()
+
+Messi <- Messi %>%
+                   tab_header(title = md("**Jugador con más goles en LaLiga**"), subtitle= md("Hasta la temporada 2018/2019"))
+Messi <- Messi %>%
+                tab_options(heading.background.color = "black") %>% tab_options(heading.title.font.size = 18, heading.subtitle.font.size = 13,  column_labels.font.weight =  "bold")
+
+
+Messi <- Messi  %>%
+  gt::text_transform(locations = cells_body(columns = vars(Imagen)), fn = function(x) {gt::web_image(x, height = 70)}) %>%  cols_align(
+    align = "center")
+
+```
+
+
+```{r echo = FALSE, eval = TRUE}
+Messi
+```
+
+Claramente el máximo goleador histórico es **Lionel Messi** con un total de 419 goles desde su debut en la temporada 2004/2005 hasta la temporada 2018/2019.
+
+```{r}
+library (tidyverse)
+library(gganimate)
+goleadores_laliga <- rio::import(here::here("./datos/goles_total_laliga.csv"))
+goleadores_laliga$Total = rowSums (goleadores_laliga[ , 4:32])
+
+goleadores_laliga <- goleadores_laliga %>% mutate(Player = case_when(
+  Player==  "RaÃºl" ~ " Raúl ",
+  TRUE ~ Player))
+goleadores_laliga2 <- goleadores_laliga  %>%  slice_max(Total, n = 5) 
+
+topg<- goleadores_laliga2 %>% 
+  tidyr::pivot_longer(cols = 4:32, names_to = "Temporada")
+
+
+a<-ggplot(topg, aes(Temporada , value , color=Player, fill=Player))+ geom_bar(stat = "identity")+  coord_flip()+  labs(title = "Evolución de goles por temporada de los 5 máximos goleadores de España", subtitle = "Desde la temporada 90/91 a la 18/19",  x = "Goles", x = "Año")
+a
+
+```
+
+Este gráfico tendría que ser animado, pero a la hora de knittear no se llega a cargar, en formato.r si que iba sin problema, pero a la hora de pasar a rmd y poner la función transition_states no carga. El gráfico nos muestra la evolución de cantidad de goles de los 5 máximos goleadores históricos de Laliga desde el año 1990 hasta el 2019. Estos son Messi, Cristiano Ronaldo, Raúl, Eto'o y Villa.<br>
+
+El gráfico nos muestra la cantidad de goles que ha maracado cada jugadore en cada año. Esta tabla está animada por el paquete gganimate, a través de la función transition_states.<br>
+
+
+```{r}
+map<- goleadores_laliga %>% group_by(Country) %>%  summarize(Paises = n()) 
+
+
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("rgeos")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+world <- world %>% filter(subregion != "Antarctica") %>% filter(admin != "Greenland")
+x<-ggplot() + geom_sf(data = world) + theme_void()
+world <- world %>% select(name, iso_a3, geometry)
+
+
+df_world <- left_join(map, world, by = c("Country" = "name") ) 
+
+m<-ggplot(df_world) + geom_sf(aes(geometry = geometry, fill = Paises)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt")+ labs(title = "Número de goleadores por cada país de LaLiga", caption = "Datos de Github",subtitle = "Datos desde la temporada 87/88 a la 18/19")
+
+
+```
+
+
+```{r out.width="100%", out.height="50%", echo=FALSE, eval=TRUE}
+m
+```
+
+Más tarde, he elaborado un mapa, que nos muestra la cantidad de goleadores de Laliga que ha habido en cada país desde la temporada 1990.<br>
+Claramente, el país que más goleadores ha aportado es España, más tarde, destacan otros países como Francia, Brasil o Argentina.
+<br>
+Para la elaboración de este mapa, he cogido los datos de cada temporada, y he agrupado los datos por el país del que viene cada futbolista. Más tarde obtenido los datos espacilaes de la practica 5 de calse, en el que había un mapa del mundo espacial con los paquetes "rnaturalearth", "rnaturalearthdata" y "rgeos". Después he unido estas dos tablas y he creado el gráfico.
+
+
+<br>
+
+## 2.1 Máximos goleadores de las grandes ligas europeas
+Esta parte del trabajo la vamos a centrar en los máximos goleadores de fútbol europeo en los últimos 20 años. 
+
+```{r}
+goleadores_ligas_top<- rio::import(here::here("./datos/goles_ligas_top.csv"))
+library (tidyverse)
+library(gganimate)
+
+goleadores_ligas_top <- goleadores_ligas_top %>% mutate(Player = case_when(
+  Player==  "RaÃºl" ~ " Raúl ",
+  Player==  "Zlatan IbrahimoviÄ‡" ~ " Zlatan Ibrahimović ",
+  TRUE ~ Player))
+
+
+goleadores_ligas_top$Total = rowSums (goleadores_ligas_top[ , 2:30])
+
+goleadores_top <- goleadores_ligas_top  %>%  slice_max(Total, n = 6) 
+
+mejor<- goleadores_top %>% 
+  tidyr::pivot_longer(cols = 2:30, names_to = "Temporada")
+
+
+gr<-ggplot(mejor , aes(Temporada , value,  group= Player, color = Player))  + geom_line() + facet_wrap(vars(Player), nrow = 2, ncol = 3)+  labs(title = "Evolución de goles por temporada de los 6 máximos goleadores de Europa", subtitle = "Desde la temporada 90/91 a la 18/19",  x = "Goles", x = "Año") +  theme(legend.position = "none")+ theme( axis.text.x=element_blank()) 
+
+
+
+
+grafico_a <- ggplot(mejor, aes(Player, Total,   fill = Player , color= "blue")) +  scale_fill_brewer(palette="Spectral") + geom_bar(stat = "identity")+ 
+  labs(title = "Máximos goleadores Ligas Top", subtitle = "Desde el 1990 hasta el 2019") + theme(legend.position = "none")
+
+grafico_ap <- grafico_a + 
+  geom_text(aes(y=Total, 
+                label =Total), position = position_dodge(width = 0.8), 
+            size = 3.2, vjust=3, col = "Black")
+
+```
+
+
+```{r echo = FALSE, eval = TRUE}
+grafico_ap
+```
+Aquí he recogido los datos y los he agrupado en un sumatorio de todos los goles de las últimas temporadas. Podemos observar que los dos jugadores que destacan por encima del resto son Leo Messi y Cristiano Ronaldo (el cual le cogen los datos de Laliga y de la Serie A (Italia)), estos dos animales han anotado la friolera cantidad de 419 y 416 goles respectivamente en las ligas que han jugado. <br>
+
+El gráfico es de barras pero tiene la diferencia de que he añadido el número de goles que han anotado debajo de las barras con geom_text.
+
+```{r echo = FALSE, eval = TRUE}
+gr
+```
+
+Este, muestra la evolución de goles que han anotado los 6 máximos goleadores de los últimos 20 años en cada temporada.<br>
+
+Es un gráfico de lineas que está unido a través de un facet_wrap diferenciando cada jugador. En este gráfico he tenido la dificultad de ajustar bien el texto del eje x(las difernetes temporadas), finalmente he quitado el número de las temporadas debido a que salía mal.
+
+# 4. Campeones
+En este apartado voy a enseñaros una serie de curiosidades sobre la historia de la liga española. <br>
+```{r echo = FALSE, eval = TRUE}
+campeones<- rio::import(here::here("./datos/La_Liga_Winners.csv"))
+
+campeones <- campeones %>% mutate(Winner = case_when(
+Winner==  "AtlÃ©tico Madrid" ~ "Átletico de Madird",
+Winner == "AtlÃ©tico AviaciÃ³n[a]" ~ "Átletico de Madrid",
+Winner == "Deportivo La CoruÃ±a" ~ "Deportivo de La Coruña",
+TRUE ~ Winner))
+```
+
+
+
+```{r echo = FALSE, eval = TRUE}
+
+DT::datatable(campeones, filter = 'top',
+              options = list(pageLength = 10 , autoWidth = TRUE ))
+```
+<br>
+Aquí se puede observar una tabla que nos muestra todos los campeones de Laliga desde que se creó esta, cabe destacar que del 1936-1939, fue suspendida por la guerra civil. También nos muestra, los segundos y terceros clasificados; así como, el máximo goleador de cada año y cuantos goles hizo este.
+
+<br>
+```{r}
+equipo<- campeones %>% group_by(Winner)%>%filter(!(Season %in% c("1936/37", "1937/38","1938/39")) ) %>%   summarize(Ligas = n()) %>% 
+  arrange(desc(Ligas))
+ 
+rm<- equipo  %>%  slice_max(Ligas, n = 1) 
+
+Escudo<-"https://www.ecured.cu/images/thumb/c/c6/428px-logo_real_madrid_svg1_copia.jpg/260px-428px-logo_real_madrid_svg1_copia.jpg"
+rm <- rm %>% add_column(Escudo)
+
+library(gt)
+rm <- rm %>% gt()
+
+rm <- rm %>%
+                   tab_header(title = md("**Equipo con más Ligas**"), subtitle= md("Hasta la temporada 2019/2020"))
+rm <- rm %>%
+                tab_options(heading.background.color = "black") %>% tab_options(heading.title.font.size = 18, heading.subtitle.font.size = 13,  column_labels.font.weight =  "bold")
+
+
+rm <- rm  %>%
+  gt::text_transform(locations = cells_body(columns = vars(Escudo)), fn = function(x) {gt::web_image(x, height = 70)}) %>%  cols_align(
+    align = "center")
+
+```
+
+```{r echo = FALSE, eval = TRUE}
+rm
+```
+Aquí podemos observar que el equipo más laureado de la historia de la liga española es el **Real Madrid** Club de fútbol con 34 ligas. 
+
+<br>
+```{r, eval = TRUE}
+equipo<- campeones %>% group_by(Winner)%>%filter(!(Season %in% c("1936/37", "1937/38","1938/39")) ) %>%  
+  summarize(Ligas = n()) %>% 
+  arrange(desc(Ligas))
+ 
+queso<-ggplot(equipo, aes("", Ligas, fill = Winner)) + geom_bar(stat = "identity", color="white") + geom_text(aes(label=Ligas), position = position_stack(vjust=0.5), color = "white", size = 2) + coord_polar(theta = "y") + theme_void() + labs(title="Número de Ligas por equipo") + theme(plot.title = element_text(hjust = 0.5))
+queso
+
+anyox<- campeones %>% group_by(Winner)%>%filter(!(Season %in% c("1936/37", "1937/38","1938/39")) )
+anyo<- ggplot(anyox, aes(Season , Goals, group=Goals,fill="red")) + geom_bar(stat = "identity")  + labs(x = "Temporada", y = "Goles", title = "Goles por temporada de cada pichichi de LaLiga", caption = "Datos obtenidos de Github")  + theme_bw()   + theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle=60, vjust=0.6), panel.background = NULL)+ theme(legend.position = "none")
+
+
+```
+Este gráfico nos muestra a través de un gráfico circular, la cantidad de ligas que ha ganado cada club de la liga española. El Real Madird encabeza esta lista, por delante del Barcelona (26) y Atlético de Madrid que tiene 8 más 2 cuando se llamaba Atlético aviación.<br>
+Para la elaboración de este gráfico primero he tenido que arreglar los datos de los nombres de cada equipo, y más tarde agrupar los datos por cada primera posición que ha había obtenido. A partir de estos datos, he hecho un gráfico de "quesitos".
+
+<br>
+```{r echo = FALSE, eval = TRUE}
+anyo
+```
+En este gráfico vemos como ha evolucionado la cantidad de goles marcados por cada "pichichi" de la liga en cada temporada que se ha realizado esta, es decir, desde el 1929 hasta el 2020 quitando los años de la guerra civil.<br>
+Hay que destacar los años donde tanto Messi, como Cristiano Ronaldo han estado pealndo por ser el máximo goleador y se iban a unas cifras realmente altas, **en la temporada 2011/2012 Messi llegó a alcanzar los 50 goles en una temporada**.<br>
+
+Es un ggplot de barras donde he tenido que girar el angulo del texto del eje x (las temporadas) para que se pudieran ver de manera adecuada.
+
+
+<br>
+
+
+
+# 5. Clasificación  
+En este apartado voy a mirar algunos datos relevantes sobre la clasificación de la liga en los últimos 30 años, desde la temporada 1987/1988 hasta la temporada 2018/2019.
+
+<br>
+```{r echo = TRUE, eval = TRUE}
+library (tidyverse)
+library(ggThemeAssist)
+
+clasificacion<- rio::import(here::here("./datos/clasificacion_total.csv"))
+
+
+#Puntos de cada primer clasificado y más partidos ganados
+clasificacion_1<- clasificacion %>% filter(Position == 1) 
+
+clasificacion_1<- clasificacion_1 %>% group_by(Points) %>%   arrange(desc(Points))
+
+primero<-ggplot(clasificacion_1, aes(Season , Points , color=Team, fill=Team))+ geom_bar(stat = "identity")+ labs(x = "Temporada", y = "Puntos obtenidos", title = "Puntos por temporada de cada campeón de la Liga",subtitle = "Desde la temporada 87/88 a la 18/19", caption = "Datos obtenidos de Github")  + theme_bw() + scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})  + theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle=60, vjust=0.6), panel.background = NULL)
+
+
+clasificacion_wins <- clasificacion_1 %>%   arrange(desc(Won))
+
+w<-ggplot(clasificacion_1, aes(Season , Won , color=Team, fill=Team))+ geom_bar(stat = "identity") + labs(x = "Temporada", y = "Nº de Partidos Ganados", title = "Partidos ganados por temporada de cada campeón de la Liga",subtitle = "Desde la temporada 87/88 a la 18/19", caption = "Datos obtenidos de Github")  + theme_bw() + scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})  + theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle=60, vjust=0.6), panel.background = NULL)
+
+
+library(gridExtra)  #- install.packages("gridExtra")
+
+l<-grid.arrange(primero, w, nrow= 2)
+
+```
+<br>
+```{r echo = FALSE, eval = TRUE,warning = FALSE}
+l
+```
+Aquí, nos hemos centrado en los datos de los primeros clasificados, y en este gráfico observamos la evolución de los puntos de cada primer clasificado así como la cantidad de partidos que ha ganado cada equipo ganador en cada tmeporada.<br>
+
+El gráfico consta de dos gráficos de barras agrupados por el equipo que ha salido campeón. Más tarde a raíz de estos gráficos, los he unido con la función gird.extra del paquete con el mismo nombre.
+
+
+<br>
+
+
+```{r}
+#Los peores equipos (menos puntos)
+clasificacion_peor <- clasificacion %>% slice_min(Points, n = 10) %>% select(!(Conceded|GoalDifference|Team))
+
+#Los que más goles han marcado
+clasificacion_goles <- clasificacion %>%   slice_max(Scored, n = 10)%>% select(!(Conceded|GoalDifference|Team))
+```
+
+<br>
+
+<center><FONT COLOR="Blue">**Equipos con menos puntos obtenidos en liga**</FONT></center>
+```{r echo=FALSE, eval=TRUE, out.width="80%"}
+clasificacion_peor
+```
+Esta primera tabla, nos muestra los peores equipos de los últimos 30 años en cuanto datos de la puntuación. Los equipos que menos puntos han logrado ene stos 30 años son el Logroñes de la temporada 94/95 y el Sporting de Gijón de la temporada 97/98. Cabe destacar, que el último en unirse a esta lista en la que nadie quiere aparecer esel Málaga de la temporada 2017/2018, con 20 puntos.<br>
+Otro de los datos curisosos es que a pesar de ser los peores equipos, hay varios equipos que aparecen en esta lista sin haber quedado el último clasificado de la liga, como es el caso de Las Palmas en el año 17/18; esto supone que hay años en los que las puntuaciones para salvarse y no descender a segunda son más altos que otros.
+
+
+<br>
+
+<center><FONT COLOR="Blue">**Equipos con más goles en liga**</FONT></center>
+
+```{r echo=FALSE, eval=TRUE, out.width="80%"}
+clasificacion_goles
+```
+Aquí, he adjunto otra tabla, pero no tiene nad auqe ver con la anteror, esta muestra los 10 equipos que más goles han marcado en los últimos años. No obstante, se puede ver que todos pertenecen al Real madrid o al Fútbol Club Barcelona. El record de puntos y goles marcados, lo consiguió el Real Madrid de Mourinho en la temporada 2011/2012 xon 100 puntos y 121 goles  favor, una auténtica locura. Este récord a día de hoy sigue vigente y me imagino que aún tardará en batirse.
+
+
+<br>
+
+
+
+## 5.1 Equipos que nunca han descendido   
+
+Hay 3 equipos en la historia del fútbol español, que jamás ha descendido a segunda división y siempre han permanecido en la categoría de oro. Estos son,por un lado, los que no podían faltar  el Real Madrid y el Barça; y por el otro lado el meritorio Athletic Club de Bilbao. Este apartado se centra en los datos de estos tres equipos en los últimos 30 años.
+
+```{r}
+library(gganimate)
+
+clasificacion_mba<- clasificacion %>% filter(`Crest names` == "Real Madrid"|`Crest names` == "FC Barcelona"| `Crest names` == "Athletic Club") 
+
+graficomba <- ggplot(clasificacion_mba, aes(Season, Points, color = `Crest names`, group = `Crest names`)) + geom_line() + geom_point() + theme_light()  + labs(title = "Evolución de puntos obtenidos",subtitle = "Datos desde la temporada 87/88 a la 18/19", caption = "Datos de Github", x = "Temporada", y = "Nº de puntos") +  theme(plot.title = element_text(hjust = 0.5, face = "bold", color = "Coral")) + theme(axis.text.x = element_text(angle=60, vjust=0.6), panel.background = NULL)+ scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})  
+
+
+library(plotly)
+
+
+
+
+b <- ggplot(clasificacion_mba, aes(Season, Position, fill = Team)) + geom_col(position = "dodge")+  theme(axis.text.x = element_text(angle=90, vjust=0.6), panel.background = NULL)+ labs(title = "Evolución de la posición en LaLiga ", caption = "Datos de Github",subtitle = "Obtenida por los equipos que nunca han descendido", x = "Temporada", y = "Nº de puntos") +  theme(plot.title = element_text(hjust = 0.5, face = "bold", color = "Coral"))   
+
+
+
+```
+
+
+```{r out.width="80%", out.height="90%", echo=FALSE, eval=TRUE}
+graficomba
+
+```
+Este primer gráfico muestra la evolución de la cantidad de puntos que han obtenido estos tres equipos.<br>
+
+Está elaborado a traves de un gráfico de puntos y lineas.
+
+
+<br>
+
+```{r out.width="100%", out.height="50%", echo=FALSE, eval=TRUE}
+ggplotly(b)
+```
+En este gráfico dinámico vemos la posición que ha logrado estos equipos desde la temporada 87/88.<br>
+Vemos que las barras del Atlhetic de Bilbao, son mucho más altas ya que al ser un equipo más modesto, muchas veces están lejos de las posiciones de las posiciones cabeceras, por este motivo tiene tanto mérito que nunca hayan descendido. <br>
+
+Es un gráfico de barras que es dinámico gracias al paquete ploty, por lo tanto, si pasas el puntero por encima de las barras, en cada una de ellas, nos dice que posición obtuvo cada equipo en esa temporada.
+
+
+<br>
+
+![bilbao](./imagenes/bilbao.jpg)
+
+# 6. Conclusión
+Finalmente quiero decir que este trabajo me ha llevado bastante trabajo, aunque gracias al tema elegido se me ha hecho bastnate más llevadero. No sé si el resultado final muestra todo el tiempo que ha supuesto (espero que sí) y espero que os haya gustado.<br>
+
+También me gustaría decir que el trabajo no está inspirado como tal en ningún otro, pero que me he apoyado y me ha ayudado bastante a la hora de resolver varias dudas, el trabajo de eqipo que hice en su día con mis compañeros Noelia y Andreu sobre el Covid.
+
+![fin](./imagenes/fin.jpg)<br>
+
+# 7. Bibliografía
+
+Para la realización del trabajo he utilizado:
+
+- https://github.com/sameer-m-dev/webScrapingRepo/tree/f640e3dd34bb01d34959df138203100d0c7dcaf1/Football
+
+- https://github.com/alvarobartt/laliga-dataset/tree/master/dataset
+
+- https://github.com/ariannalupi/laliga
+
+- https://www.kaggle.com/kishan305/spanish-football-la-liga-champions
